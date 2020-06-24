@@ -5,8 +5,8 @@ import calendar
 from jsondiff import diff
 
 
-def proccessData(newJsonData, table_name,
-                 typeOfCheck):  # This function checks what was the results on the last time check and compare it to the new results
+def check_jsons_difference(newJsonData, table_name,
+                           typeOfCheck):  # This function checks what was the results on the last time check and compare it to the new results
     try:
         stringOfAllData = typeOfCheck + "\n\n"  # All the data will added to this variable and finally it will send to email by sns
 
@@ -21,100 +21,94 @@ def proccessData(newJsonData, table_name,
         if resultFromDiff == {}:  # Nothing changed
             stringOfAllData += "There are the same results from last time"
         a = json.loads(a)
-        flagValueUpdated = False  # A flag that checks whether there is a change that is an update
-
+        flagValueUpdated = [False, ""]  # A flag that checks whether there is a change that is an update
         for key in resultFromDiff:
-            try:
-                if key != '$delete' and key != '$insert' and not key.isdigit():
-                    continue  # Skip its the same results
-            except Exception as e:
-                stringOfAllData += "There are the same results from last time"
-                return stringOfAllData
 
-                if key == '$delete' or key == '$insert':
+            if key == '$delete' or key == '$insert':
 
-                    for index in range(len(resultFromDiff[key])):  # Pass all over the results
-                        if key == '$delete':
-                            if not flagValueUpdated:  # For adding Event: update once
-                                stringOfAllData += "Event: Removed Instances" + "\n\n"  # Adding event type if its insert or delete
-                                flagValueUpdated = True  # Need to add one time to flag changed
-                            jsonOfChanges = a[resultFromDiff[key][index]]  # Json of changes
-                            if typeOfCheck == 'RDS':
-                                stringOfAllData += "DB Name:" + jsonOfChanges["db_name"] + " | DB Type:" + \
-                                                   jsonOfChanges["db_type"] + " | DB Engine:" + jsonOfChanges[
-                                                       "engine"] + " | DB Region:" + jsonOfChanges["region"] + "\n"
-                            else:  # EC2
-                                stringOfAllData += "Instance Name:" + jsonOfChanges[
-                                    "instance_name"] + " | Instance ID:" + jsonOfChanges[
-                                                       "instance_id"] + " | Instance Status:" + jsonOfChanges[
-                                                       "status"] + " | Instance Region:" + jsonOfChanges[
-                                                       "region"] + "\n"
+                for index in range(len(resultFromDiff[key])):  # Pass all over the results
+                    if key == '$delete':
+                        if not flagValueUpdated[0] or flagValueUpdated[1] != key:  # For adding Event: update once
+                            stringOfAllData += "Event: Removed Instances" + "\n\n"  # Adding event type if its insert or delete
+                            flagValueUpdated[0] = True  # Need to add one time to flag changed
+                            flagValueUpdated[1] = key
+                        jsonOfChanges = a[resultFromDiff[key][index]]  # Json of changes
+                        if typeOfCheck == 'RDS':
+                            stringOfAllData += "DB Name:" + jsonOfChanges["db_name"] + " | DB Type:" + jsonOfChanges[
+                                "db_type"] + " | DB Engine:" + jsonOfChanges["engine"] + " | DB Region:" + \
+                                               jsonOfChanges["region"] + "\n"
+                        else:  # EC2
+                            stringOfAllData += "Instance Name:" + jsonOfChanges["instance_name"] + " | Instance ID:" + \
+                                               jsonOfChanges["instance_id"] + " | Instance Status:" + jsonOfChanges[
+                                                   "status"] + " | Instance Region:" + jsonOfChanges["region"] + "\n"
 
-                        elif key == '$insert':
-                            if not flagValueUpdated:  # For adding Event: update once
-                                stringOfAllData += "Event: New Instances" + "\n\n"  # Adding event type if its insert or delete
-                                flagValueUpdated = True  # Need to add one time to flag changed
-                            jsonOfChanges = resultFromDiff[key][index][1]  # Json of changes
-                            if typeOfCheck == 'RDS':
-                                stringOfAllData += "DB Name:" + jsonOfChanges["db_name"] + " | DB Type:" + \
-                                                   jsonOfChanges["db_type"] + " | DB Engine:" + jsonOfChanges[
-                                                       "engine"] + " | DB Region:" + jsonOfChanges["region"] + "\n"
-                            else:  # EC2
-                                stringOfAllData += "Instance Name:" + jsonOfChanges[
-                                    "instance_name"] + " | Instance ID:" + jsonOfChanges[
-                                                       "instance_id"] + " | Instance Status:" + jsonOfChanges[
-                                                       "status"] + " | Instance Region:" + jsonOfChanges[
-                                                       "region"] + "\n"
+                    elif key == '$insert':
+                        if not flagValueUpdated[0] or flagValueUpdated[1] != key:  # For adding Event: update once
+                            stringOfAllData += "Event: New Instances" + "\n\n"  # Adding event type if its insert or delete
+                            flagValueUpdated[0] = True  # Need to add one time to flag changed
+                            flagValueUpdated[1] = key
 
-                elif key.isdigit():  # If is digit thats mean its update - this is the index of the row that updated
+                        jsonOfChanges = resultFromDiff[key][index][1]  # Json of changes
+                        if typeOfCheck == 'RDS':
+                            stringOfAllData += "DB Name:" + jsonOfChanges["db_name"] + " | DB Type:" + jsonOfChanges[
+                                "db_type"] + " | DB Engine:" + jsonOfChanges["engine"] + " | DB Region:" + \
+                                               jsonOfChanges["region"] + "\n"
+                        else:  # EC2
+                            stringOfAllData += "Instance Name:" + jsonOfChanges["instance_name"] + " | Instance ID:" + \
+                                               jsonOfChanges["instance_id"] + " | Instance Status:" + jsonOfChanges[
+                                                   "status"] + " | Instance Region:" + jsonOfChanges["region"] + "\n"
 
-                    if not flagValueUpdated:  # For adding Event: update once
-                        stringOfAllData += "Event: Updated Instances\n\n"
-                        flagValueUpdated = True  # Need to add one time to flag changed
-                    jsonOfChanges = resultFromDiff[key]  # Json of changes
-                    i = 0
-                    # Adding before and after changes
-                    if typeOfCheck == 'RDS':
-                        stringOfAllData += "Before:" + "DB Name:" + a[int(key)]["db_name"] + " | DB Type:" + \
-                                           a[int(key)]["db_type"] + " | DB Engine:" + a[int(key)][
-                                               "engine"] + " | DB Region:" + a[int(key)]["region"] + "\n"
-                        stringOfAllData += "The Changes:"
-                        for keyOfJson in jsonOfChanges:  # For each update
-                            if i > 0:
-                                stringOfAllData += " | "
-                            if keyOfJson == 'db_name':
-                                stringOfAllData += "DB Name:" + jsonOfChanges[keyOfJson]
-                            elif keyOfJson == 'db_type':
-                                stringOfAllData += "DB Type:" + jsonOfChanges[keyOfJson]
-                            elif keyOfJson == 'engine':
-                                stringOfAllData += "DB Engine:" + jsonOfChanges[keyOfJson]
-                            elif keyOfJson == 'region':
-                                stringOfAllData += "DB Region:" + jsonOfChanges[keyOfJson]
-                            i += 1
-                    else:  # EC2.
-                        stringOfAllData += "Before:" + "Instance Name:" + a[int(key)][
-                            "instance_name"] + " | Instance ID:" + a[int(key)]["instance_id"] + " | Instance Status:" + \
-                                           a[int(key)]["status"] + " | Instance Region:" + a[int(key)]["region"] + "\n"
-                        stringOfAllData += "The Changes:"
-                        for keyOfJson in jsonOfChanges:  # For each update
-                            if i > 0:
-                                stringOfAllData += " | "
-                            if keyOfJson == 'instance_name':
-                                stringOfAllData += "Instance Name:" + jsonOfChanges[keyOfJson]
-                            elif keyOfJson == 'instance_id':
-                                stringOfAllData += "Instance ID:" + jsonOfChanges[keyOfJson]
-                            elif keyOfJson == 'status':
-                                stringOfAllData += "Instance Status:" + jsonOfChanges[keyOfJson]
-                            elif keyOfJson == 'region':
-                                stringOfAllData += "Instance Region:" + jsonOfChanges[keyOfJson]
-                            i += 1
+            elif key.isdigit():  # If is digit thats mean its update - this is the index of the row that updated
 
-                    stringOfAllData += "\n\n"
-                stringOfAllData += "\n"
+                if not flagValueUpdated[0] or flagValueUpdated[1] != key:  # For adding Event: update once
+                    stringOfAllData += "Event: Updated Instances\n\n"
+                    flagValueUpdated[0] = True  # Need to add one time to flag changed
+                    flagValueUpdated[1] = "&update"
+
+                jsonOfChanges = resultFromDiff[key]  # Json of changes
+                i = 0
+                # Adding before and after changes
+                if typeOfCheck == 'RDS':
+                    stringOfAllData += "Before:" + "DB Name:" + a[int(key)]["db_name"] + " | DB Type:" + a[int(key)][
+                        "db_type"] + " | DB Engine:" + a[int(key)]["engine"] + " | DB Region:" + a[int(key)][
+                                           "region"] + "\n"
+                    stringOfAllData += "The Changes:"
+                    for keyOfJson in jsonOfChanges:  # For each update
+                        if i > 0:
+                            stringOfAllData += " | "
+                        if keyOfJson == 'db_name':
+                            stringOfAllData += "DB Name:" + jsonOfChanges[keyOfJson]
+                        elif keyOfJson == 'db_type':
+                            stringOfAllData += "DB Type:" + jsonOfChanges[keyOfJson]
+                        elif keyOfJson == 'engine':
+                            stringOfAllData += "DB Engine:" + jsonOfChanges[keyOfJson]
+                        elif keyOfJson == 'region':
+                            stringOfAllData += "DB Region:" + jsonOfChanges[keyOfJson]
+                        i += 1
+                else:  # EC2.
+                    stringOfAllData += "Before:" + "Instance Name:" + a[int(key)]["instance_name"] + " | Instance ID:" + \
+                                       a[int(key)]["instance_id"] + " | Instance Status:" + a[int(key)][
+                                           "status"] + " | Instance Region:" + a[int(key)]["region"] + "\n"
+                    stringOfAllData += "The Changes:"
+                    for keyOfJson in jsonOfChanges:  # For each update
+                        if i > 0:
+                            stringOfAllData += " | "
+                        if keyOfJson == 'instance_name':
+                            stringOfAllData += "Instance Name:" + jsonOfChanges[keyOfJson]
+                        elif keyOfJson == 'instance_id':
+                            stringOfAllData += "Instance ID:" + jsonOfChanges[keyOfJson]
+                        elif keyOfJson == 'status':
+                            stringOfAllData += "Instance Status:" + jsonOfChanges[keyOfJson]
+                        elif keyOfJson == 'region':
+                            stringOfAllData += "Instance Region:" + jsonOfChanges[keyOfJson]
+                        i += 1
+
+                stringOfAllData += "\n\n"
+            stringOfAllData += "\n"
 
         return stringOfAllData
     except Exception as e:
-        print("proccessData:", e)
+        print("check_jsons_difference:", e)
         return None
 
 
@@ -130,7 +124,7 @@ def get_last_item_from_DB(table_name):  # This function get table name and retur
     if i == 0:
         unixtime_date = datetime.datetime.utcnow()
         unixtime_now = calendar.timegm(unixtime_date.utctimetuple())
-        insertItem({"timestamp": unixtime_now, "data": []}, table_name)  # First time
+        insert_item({"timestamp": unixtime_now, "data": []}, table_name)  # First time
         return [{"timestamp": unixtime_now, "data": []}, True]
     lastTimestamp = max(listOfRowsTimestamp)  # Check what is the biggest timestamp (Last time check)
     lastItem = None
@@ -163,7 +157,7 @@ def check_all_regions_RDS_instances():  # This function return json with the dat
     return jsonToInsert
 
 
-def insertItem(jsonToInsert, table_name):  # This function get data to insert into dynamoDB by table name
+def insert_item(jsonToInsert, table_name):  # This function get data to insert into dynamoDB by table name
     dynamo = boto3.resource('dynamodb')
     # Insert the data into the DynamoDB
     table = dynamo.Table(table_name)
@@ -173,10 +167,10 @@ def insertItem(jsonToInsert, table_name):  # This function get data to insert in
     )
 
 
-def sendEmailBySNS(message):  # This function send Emails by SNS Service
+def send_email_by_SNS(message):  # This function send Emails by SNS Service
     client = boto3.client('sns')
     response = client.publish(
-        TargetArn='arn:aws:sns:eu-west-1:558860702682:ec2_instances_status',
+        TargetArn='',
         Message=message,
         MessageStructure='text'
     )
@@ -244,18 +238,18 @@ def lambda_handler(event, context):
         # List of json of data & string to send by SNS
         jsonOfInstancesStatus, stringOfCurrentInstancesStatus = check_all_regions_ec2_instances()
         jsonOfRDSStatus = check_all_regions_RDS_instances()
-        stringEC2ToSendToSNS = stringOfCurrentInstancesStatus + "\n\n" + proccessData(jsonOfInstancesStatus, "EC2Check",
-                                                                                      "EC2")
-        stringRDSToSendToSNS = "\n\n\n" + proccessData(jsonOfRDSStatus, "RdsCheck", "RDS")
+        stringEC2ToSendToSNS = stringOfCurrentInstancesStatus + "\n\n" + check_jsons_difference(jsonOfInstancesStatus,
+                                                                                                "EC2Check", "EC2")
+        stringRDSToSendToSNS = "\n\n\n" + check_jsons_difference(jsonOfRDSStatus, "RdsCheck", "RDS")
 
         # Send emails by SNS
         # Add account name
         accountName = "AccountName"
-        sendEmailBySNS("Account :" + accountName + "\n\n" + stringEC2ToSendToSNS + stringRDSToSendToSNS)
+        send_email_by_SNS("Account :" + accountName + "\n\n" + stringEC2ToSendToSNS + stringRDSToSendToSNS)
 
         # Update dynamoDB with new data
-        insertItem(jsonOfRDSStatus, "RdsCheck")  # Update the table with the new results
-        insertItem(jsonOfInstancesStatus, "EC2Check")  # Update the table with the new results
+        insert_item(jsonOfRDSStatus, "RdsCheck")  # Update the table with the new results
+        insert_item(jsonOfInstancesStatus, "EC2Check")  # Update the table with the new results
         print("Process Success")
         return {
             'statusCode': 200,
