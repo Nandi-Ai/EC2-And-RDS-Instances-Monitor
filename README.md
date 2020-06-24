@@ -1,5 +1,5 @@
 <a ><img src="https://futurumresearch.com/wp-content/uploads/2020/01/aws-logo.png" width=300 height=200 title="AWS" alt="aws"></a>
-<a ><img src="https://www.logimic.org/wp-content/uploads/2020/05/600px-AWS_Lambda_logo.svg_.png" width=200 height=200 title="AWS" alt="aws"></a>
+<a ><img src="https://www.logimic.org/wp-content/uploads/2020/05/600px-AWS_Lambda_logo.svg_.png" width=200 height=200 title="Lambda" alt="aws"></a>
 
 # EC2 and RDS Instances status monitor by Lambda
 
