@@ -3,7 +3,14 @@
 
 # EC2 and RDS Instances status monitor by Lambda
 
-
+## Motivation
+ 
+When running AWS on multiple regions, we encounter issues to track the changes. How many instances are running where?
+How many RDS instances do we have? When the changes took place?
+This code uses DynamoDB to keep track on instances
+Using SNS to send reports to predefined mails
+  
+Feel free to fork or update the solution
 
 ## Description
 
@@ -40,7 +47,7 @@ Lambda function to monitor EC2 and RDS instances information
 
 
 ## Start working
-> You should create all those services on the same region
+> All services should be on the same region
 
 **IAM roles**
 > Add roles for allow Lambda function use services
@@ -81,7 +88,7 @@ Lambda function to monitor EC2 and RDS instances information
 **Lambda**
 > Run a Python script that executes the whole process
 
-*Now you need to add layers of python modules*
+*Adding layers for python modules*
 
 - Go to Layers tab in Lambda service at AWS
 - Click on `Create layer`
@@ -96,7 +103,7 @@ Lambda function to monitor EC2 and RDS instances information
 
 
 
-*Now you got the python modules that you needs - you can create Lambda function*
+*Lambda function*
 
 - Go to Functions tab in Lambda service at AWS
 - Click on `Create function`
@@ -107,7 +114,7 @@ Lambda function to monitor EC2 and RDS instances information
 - Click on `Create function`
 
 
-*Now you created Lambda function - you can configure this function*
+*Configure functions*
 
 - Click on `Layers`
 - Click on `Add a layer`
@@ -116,7 +123,7 @@ Lambda function to monitor EC2 and RDS instances information
 - Increment Memory to `2560MB` as much as the Memory is low the function run more slowly
 - Change Timeout to 2 min (if Memory is under 2560MB increment the time)
 
-*Now you configured Lambda function - you can copy the code into Function code*
+*Copy code*
 
 - Copy code from `MonitorEC2AndRDSInstancesStatus.py` and paste in Function code 
 - Add on `sendEmailBySNS` function to `TargetArn` variable the arn of the SNS topic that you've created before
