@@ -23,7 +23,7 @@ Lambda function to monitor EC2 and RDS instances information
 
 ### Clone
 
-- Clone this repo to your local machine using `git clone https://github.com/fvcproductions/SOMEREPO`
+- Clone this repo to your local machine using `git clone git@github.com:Nandi-Ai/EC2-And-RDS-Instances-Monitor.git`
 
 ##Services that this Lambda use
 
